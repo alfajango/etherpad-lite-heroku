@@ -66,7 +66,7 @@ exports.socketTransportProtocols = ['xhr-polling', 'jsonp-polling', 'htmlfile'];
 /*
  * The Type of the database
  */
-exports.dbType = "dirty";
+exports.dbType = "cleardb";
 /**
  * This setting is passed with dbType to ueberDB to set up the database
  */
@@ -95,7 +95,7 @@ exports.maxAge = 1000*60*60*6; // 6 hours
 /**
  * A flag that shows if minification is enabled or not
  */
-exports.minify = true;
+exports.minify = false;
 
 /**
  * The path of the abiword executable
