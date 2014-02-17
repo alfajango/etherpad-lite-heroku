@@ -29,7 +29,7 @@ var log4js = require("log4js");
 
 /* Root path of the installation */
 exports.root = path.normalize(path.join(npm.dir, ".."));
-
+var rootPath = path.resolve(npm.dir, '..');
 /**
  * The app title, visible e.g. in the browser window
  */
@@ -70,7 +70,7 @@ exports.dbType = "cleardb";
 /**
  * This setting is passed with dbType to ueberDB to set up the database
  */
-exports.dbSettings = { "filename" : path.join(exports.root, "dirty.db") };
+exports.dbSettings = { "filename" : path.join(rootPath, "dirty.db") };
 
 /**
  * The default Text of a new pad
@@ -137,7 +137,8 @@ exports.abiwordAvailable = function()
 exports.reloadSettings = function reloadSettings() {
   // Discover where the settings file lives
   var settingsFilename = argv.settings || "settings.json";
-  settingsFilename = path.resolve(path.join(root, settingsFilename));
+ console.log(settingsFilename);
+  settingsFilename = path.resolve(path.join(rootPath, settingsFilename));
 
   var settingsStr;
   try{

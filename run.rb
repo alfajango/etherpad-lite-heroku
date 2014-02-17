@@ -5,7 +5,7 @@ require 'json'
 require 'uri'
 
 # Create settings hash add merge in the user-provided JSON.
-mysql_uri = URI.parse(ENV['DATABASE_URL'])
+mysql_uri = URI.parse("mysql://b31c781e42894a:dae66fe9@us-cdbr-east-05.cleardb.net/heroku_395c31239e0d521?reconnect=true")
 settings = {
   dbType: 'mysql',
   dbSettings: {
