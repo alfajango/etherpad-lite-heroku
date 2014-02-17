@@ -42,15 +42,15 @@ exports.error = function error(msg) {
 };
 
 /**
- * This method is user for assertions with Messages 
- * if assert fails, the error function called.
+ * This method is used for assertions with Messages 
+ * if assert fails, the error function is called.
  * @param b {boolean} assertion condition
  * @param msgParts {string} error to be passed if it fails
  */
 exports.assert = function assert(b, msgParts) {
   if (!b) {
     var msg = Array.prototype.slice.call(arguments, 1).join('');
-    exports.error("exports: " + msg);
+    exports.error("Failed assertion: " + msg);
   }
 };
 
@@ -281,7 +281,7 @@ exports.checkRep = function (cs) {
 
   assem.endDocument();
   var normalized = exports.pack(oldLen, calcNewLen, assem.toString(), charBank);
-  exports.assert(normalized == cs, normalized, ' != ', cs);
+  exports.assert(normalized == cs, 'Invalid changeset (checkRep failed)');
 
   return cs;
 }
@@ -673,9 +673,9 @@ exports.textLinesMutator = function (lines) {
       }
       //print(inSplice+" / "+isCurLineInSplice()+" / "+curSplice[0]+" / "+curSplice[1]+" / "+lines.length);
 /*if (inSplice && (! isCurLineInSplice()) && (curSplice[0] + curSplice[1] < lines.length)) {
-	  print("BLAH");
-	  putCurLineInSplice();
-	}*/
+  print("BLAH");
+  putCurLineInSplice();
+}*/
       // tests case foo in remove(), which isn't otherwise covered in current impl
     }
     //debugPrint("skip");
@@ -1296,7 +1296,7 @@ exports.compose = function (cs1, cs2, pool) {
   var unpacked2 = exports.unpack(cs2);
   var len1 = unpacked1.oldLen;
   var len2 = unpacked1.newLen;
-  exports.assert(len2 == unpacked2.oldLen, "mismatched composition");
+  exports.assert(len2 == unpacked2.oldLen, "mismatched composition of two changesets");
   var len3 = unpacked2.newLen;
   var bankIter1 = exports.stringIterator(unpacked1.charBank);
   var bankIter2 = exports.stringIterator(unpacked2.charBank);
@@ -1504,6 +1504,7 @@ exports.moveOpsToNewPool = function (cs, oldPool, newPool) {
   return upToDollar.replace(/\*([0-9a-z]+)/g, function (_, a) {
     var oldNum = exports.parseNum(a);
     var pair = oldPool.getAttrib(oldNum);
+    if(!pair) exports.error('Can\'t copy unknown attrib (reference attrib string to non-existant pool entry). Inconsistent attrib state!');
     var newNum = newPool.putAttrib(pair);
     return '*' + exports.numToString(newNum);
   }) + fromDollar;
@@ -1840,27 +1841,11 @@ exports.inverse = function (cs, lines, alines, pool) {
     }
   }
 
-  function lines_length() {
-    if ((typeof lines.length) == "number") {
-      return lines.length;
-    } else {
-      return lines.length();
-    }
-  }
-
   function alines_get(idx) {
     if (alines.get) {
       return alines.get(idx);
     } else {
       return alines[idx];
-    }
-  }
-
-  function alines_length() {
-    if ((typeof alines.length) == "number") {
-      return alines.length;
-    } else {
-      return alines.length();
     }
   }
 
@@ -2010,7 +1995,7 @@ exports.follow = function (cs1, cs2, reverseInsertOrder, pool) {
   var unpacked2 = exports.unpack(cs2);
   var len1 = unpacked1.oldLen;
   var len2 = unpacked2.oldLen;
-  exports.assert(len1 == len2, "mismatched follow");
+  exports.assert(len1 == len2, "mismatched follow - cannot transform cs1 on top of cs2");
   var chars1 = exports.stringIterator(unpacked1.charBank);
   var chars2 = exports.stringIterator(unpacked2.charBank);
 
@@ -2105,7 +2090,9 @@ exports.follow = function (cs1, cs2, reverseInsertOrder, pool) {
       exports.copyOp(op2, opOut);
       op2.opcode = '';
     } else if (!op2.opcode) {
-      exports.copyOp(op1, opOut);
+      // @NOTE: Critical bugfix for EPL issue #1625. We do not copy op1 here
+      // in order to prevent attributes from leaking into result changesets.
+      // exports.copyOp(op1, opOut);
       op1.opcode = '';
     } else {
       // both keeps
@@ -2181,4 +2168,122 @@ exports.followAttributes = function (att1, att2, pool) {
     buf.append(exports.numToString(pool.putAttrib(atts[i])));
   }
   return buf.toString();
+};
+
+exports.composeWithDeletions = function (cs1, cs2, pool) {
+  var unpacked1 = exports.unpack(cs1);
+  var unpacked2 = exports.unpack(cs2);
+  var len1 = unpacked1.oldLen;
+  var len2 = unpacked1.newLen;
+  exports.assert(len2 == unpacked2.oldLen, "mismatched composition of two changesets");
+  var len3 = unpacked2.newLen;
+  var bankIter1 = exports.stringIterator(unpacked1.charBank);
+  var bankIter2 = exports.stringIterator(unpacked2.charBank);
+  var bankAssem = exports.stringAssembler();
+
+  var newOps = exports.applyZip(unpacked1.ops, 0, unpacked2.ops, 0, function (op1, op2, opOut) {
+    var op1code = op1.opcode;
+    var op2code = op2.opcode;
+    if (op1code == '+' && op2code == '-') {
+      bankIter1.skip(Math.min(op1.chars, op2.chars));
+    }
+    exports._slicerZipperFuncWithDeletions(op1, op2, opOut, pool);
+    if (opOut.opcode == '+') {
+      if (op2code == '+') {
+        bankAssem.append(bankIter2.take(opOut.chars));
+      } else {
+        bankAssem.append(bankIter1.take(opOut.chars));
+      }
+    }
+  });
+
+  return exports.pack(len1, len3, newOps, bankAssem.toString());
+};
+
+// This function is 95% like _slicerZipperFunc, we just changed two lines to ensure it merges the attribs of deletions properly. 
+// This is necassary for correct paddiff. But to ensure these changes doesn't affect anything else, we've created a seperate function only used for paddiffs
+exports._slicerZipperFuncWithDeletions= function (attOp, csOp, opOut, pool) {
+  // attOp is the op from the sequence that is being operated on, either an
+  // attribution string or the earlier of two exportss being composed.
+  // pool can be null if definitely not needed.
+  //print(csOp.toSource()+" "+attOp.toSource()+" "+opOut.toSource());
+  if (attOp.opcode == '-') {
+    exports.copyOp(attOp, opOut);
+    attOp.opcode = '';
+  } else if (!attOp.opcode) {
+    exports.copyOp(csOp, opOut);
+    csOp.opcode = '';
+  } else {
+    switch (csOp.opcode) {
+    case '-':
+      {
+        if (csOp.chars <= attOp.chars) {
+          // delete or delete part
+          if (attOp.opcode == '=') {
+            opOut.opcode = '-';
+            opOut.chars = csOp.chars;
+            opOut.lines = csOp.lines;
+            opOut.attribs = csOp.attribs; //changed by yammer
+          }
+          attOp.chars -= csOp.chars;
+          attOp.lines -= csOp.lines;
+          csOp.opcode = '';
+          if (!attOp.chars) {
+            attOp.opcode = '';
+          }
+        } else {
+          // delete and keep going
+          if (attOp.opcode == '=') {
+            opOut.opcode = '-';
+            opOut.chars = attOp.chars;
+            opOut.lines = attOp.lines;
+            opOut.attribs = csOp.attribs; //changed by yammer
+          }
+          csOp.chars -= attOp.chars;
+          csOp.lines -= attOp.lines;
+          attOp.opcode = '';
+        }
+        break;
+      }
+    case '+':
+      {
+        // insert
+        exports.copyOp(csOp, opOut);
+        csOp.opcode = '';
+        break;
+      }
+    case '=':
+      {
+        if (csOp.chars <= attOp.chars) {
+          // keep or keep part
+          opOut.opcode = attOp.opcode;
+          opOut.chars = csOp.chars;
+          opOut.lines = csOp.lines;
+          opOut.attribs = exports.composeAttributes(attOp.attribs, csOp.attribs, attOp.opcode == '=', pool);
+          csOp.opcode = '';
+          attOp.chars -= csOp.chars;
+          attOp.lines -= csOp.lines;
+          if (!attOp.chars) {
+            attOp.opcode = '';
+          }
+        } else {
+          // keep and keep going
+          opOut.opcode = attOp.opcode;
+          opOut.chars = attOp.chars;
+          opOut.lines = attOp.lines;
+          opOut.attribs = exports.composeAttributes(attOp.attribs, csOp.attribs, attOp.opcode == '=', pool);
+          attOp.opcode = '';
+          csOp.chars -= attOp.chars;
+          csOp.lines -= attOp.lines;
+        }
+        break;
+      }
+    case '':
+      {
+        exports.copyOp(attOp, opOut);
+        attOp.opcode = '';
+        break;
+      }
+    }
+  }
 };

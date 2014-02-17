@@ -107,11 +107,16 @@ function loadBroadcastSliderJS(fireWhenAllScriptsAreLoaded)
     {
       newpos = Number(newpos);
       if (newpos < 0 || newpos > sliderLength) return;
+      if(!newpos){
+        newpos = 0; // stops it from displaying NaN if newpos isn't set
+      }
+      window.location.hash = "#" + newpos;
       $("#ui-slider-handle").css('left', newpos * ($("#ui-slider-bar").width() - 2) / (sliderLength * 1.0));
       $("a.tlink").map(function()
       {
         $(this).attr('href', $(this).attr('thref').replace("%revision%", newpos));
       });
+
       $("#revision_label").html(html10n.get("timeslider.version", { "version": newpos}));
 
       if (newpos == 0)
@@ -193,7 +198,8 @@ function loadBroadcastSliderJS(fireWhenAllScriptsAreLoaded)
       });
       if (numAnonymous > 0)
       {
-        var anonymousAuthorString = numAnonymous + " unnamed author" + (numAnonymous > 1 ? "s" : "")
+        var anonymousAuthorString = html10n.get("timeslider.unnamedauthors", { num: numAnonymous });
+        
         if (numNamed !== 0){
           authorsList.append(' + ' + anonymousAuthorString);
         } else {
@@ -361,7 +367,11 @@ function loadBroadcastSliderJS(fireWhenAllScriptsAreLoaded)
           $(self).css('left', newloc);
           // if(getSliderPosition() != Math.floor(newloc * sliderLength / ($("#ui-slider-bar").width()-2)))
           setSliderPosition(Math.floor(newloc * sliderLength / ($("#ui-slider-bar").width() - 2)))
-          self.currentLoc = parseInt($(self).css('left'));
+          if(parseInt($(self).css('left')) < 2){
+            $(self).css('left', '2px');
+          }else{
+            self.currentLoc = parseInt($(self).css('left'));
+          }
         });
       })
 
@@ -446,32 +456,19 @@ function loadBroadcastSliderJS(fireWhenAllScriptsAreLoaded)
 
       if (clientVars)
       {
-        if (clientVars.fullWidth)
+        $("#timeslider").show();
+        
+        var startPos = clientVars.collab_client_vars.rev;
+        if(window.location.hash.length > 1)
         {
-          $("#padpage").css('width', '100%');
-          $("#revision").css('position', "absolute")
-          $("#revision").css('right', "20px")
-          $("#revision").css('top', "20px")
-          $("#padmain").css('left', '0px');
-          $("#padmain").css('right', '197px');
-          $("#padmain").css('width', 'auto');
-          $("#rightbars").css('right', '7px');
-          $("#rightbars").css('margin-right', '0px');
-          $("#timeslider").css('width', 'auto');
-        }
-
-        if (clientVars.disableRightBar)
-        {
-          $("#rightbars").css('display', 'none');
-          $('#padmain').css('width', 'auto');
-          if (clientVars.fullWidth) $("#padmain").css('right', '7px');
-          else $("#padmain").css('width', '860px');
-          $("#revision").css('position', "absolute");
-          $("#revision").css('right', "20px");
-          $("#revision").css('top', "20px");
+          var hashRev = Number(window.location.hash.substr(1));
+          if(!isNaN(hashRev))
+          {
+            // this is necessary because of the socket.io-event which loads the changesets
+            setTimeout(function() { setSliderPosition(hashRev); }, 1);
+          }
         }
         
-        $("#timeslider").show();
         setSliderLength(clientVars.collab_client_vars.rev);
         setSliderPosition(clientVars.collab_client_vars.rev);
         

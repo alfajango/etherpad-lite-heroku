@@ -1,5 +1,5 @@
 /**
- * The Session Manager provides functions to manage session in the database
+ * The Session Manager provides functions to manage session in the database, it only provides session management for sessions created by the API
  */
 
 /*
@@ -21,7 +21,7 @@
 
 var ERR = require("async-stacktrace");
 var customError = require("../utils/customError");
-var randomString = require('ep_etherpad-lite/static/js/pad_utils').randomString;
+var randomString = require("../utils/randomstring");
 var db = require("./DB").db;
 var async = require("async");
 var groupMangager = require("./GroupManager");
