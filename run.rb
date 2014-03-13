@@ -15,8 +15,8 @@ settings = {
     database: mysql_uri.path.sub(%r{^/}, '')
   },
   defaultPadText: '',
-  editOnly: true,
-  requireSession: true,
+  editOnly: false,
+  requireSession: false,
   title: '',
 }.merge(JSON.parse(ENV.fetch('ETHERPAD_SETTINGS', {}.to_json)))
 
