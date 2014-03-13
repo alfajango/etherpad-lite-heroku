@@ -77,6 +77,7 @@ function loadBroadcastJS(socket, sendSocketMsg, fireWhenAllScriptsAreLoaded, Bro
   }
 
 
+  var socketId;
   //var socket;
   var channelState = "DISCONNECTED";
 

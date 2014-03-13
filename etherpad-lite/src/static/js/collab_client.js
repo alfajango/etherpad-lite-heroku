@@ -40,9 +40,11 @@ function getCollabClient(ace2editor, serverVars, initialUserInfo, options, _pad)
 
   var rev = serverVars.rev;
   var padId = serverVars.padId;
+  var globalPadId = serverVars.globalPadId;
 
   var state = "IDLE";
   var stateMessage;
+  var stateMessageSocketId;
   var channelState = "CONNECTING";
   var appLevelDisconnectReason = null;
 
@@ -50,10 +52,12 @@ function getCollabClient(ace2editor, serverVars, initialUserInfo, options, _pad)
   var initialStartConnectTime = 0;
 
   var userId = initialUserInfo.userId;
+  var socketId;
   //var socket;
   var userSet = {}; // userId -> userInfo
   userSet[userId] = initialUserInfo;
 
+  var reconnectTimes = [];
   var caughtErrors = [];
   var caughtErrorCatchers = [];
   var caughtErrorTimes = [];
@@ -192,6 +196,7 @@ function getCollabClient(ace2editor, serverVars, initialUserInfo, options, _pad)
         changeset: userChangesData.changeset,
         apool: userChangesData.apool
       };
+      stateMessageSocketId = socketId;
       sendMessage(stateMessage);
       sentMessage = true;
       callbacks.onInternalAction("commitPerformed");
@@ -202,6 +207,17 @@ function getCollabClient(ace2editor, serverVars, initialUserInfo, options, _pad)
       // run again in a few seconds, to detect a disconnect
       setTimeout(wrapRecordingErrors("setTimeout(handleUserChanges)", handleUserChanges), 3000);
     }
+  }
+
+  function getStats()
+  {
+    var stats = {};
+
+    stats.screen = [$(window).width(), $(window).height(), window.screen.availWidth, window.screen.availHeight, window.screen.width, window.screen.height].join(',');
+    stats.ip = serverVars.clientIp;
+    stats.useragent = serverVars.clientAgent;
+
+    return stats;
   }
 
   function setUpSocket()
@@ -489,6 +505,16 @@ function getCollabClient(ace2editor, serverVars, initialUserInfo, options, _pad)
     }
   }
 
+  function keys(obj)
+  {
+    var array = [];
+    $.each(obj, function(k, v)
+    {
+      array.push(k);
+    });
+    return array;
+  }
+
   function valuesArray(obj)
   {
     var array = [];
@@ -567,6 +593,7 @@ function getCollabClient(ace2editor, serverVars, initialUserInfo, options, _pad)
     {
       obj.committedChangeset = stateMessage.changeset;
       obj.committedChangesetAPool = stateMessage.apool;
+      obj.committedChangesetSocketId = stateMessageSocketId;
       editor.applyPreparedChangesetToBase();
     }
     var userChangesData = editor.prepareUserChangeset();

@@ -8,11 +8,11 @@ cmd /C node -e "" || ( echo "Please install node.js ( http://nodejs.org )" && ex
 
 echo _
 echo Checking node version...
-set check_version="if(['6','8'].indexOf(process.version.split('.')[1].toString()) === -1) { console.log('You are running a wrong version of Node. Etherpad Lite requires v0.6.x or v0.8.x'); process.exit(1) }"
+set check_version="if(['8','10'].indexOf(process.version.split('.')[1].toString()) === -1) { console.log('You are running a wrong version of Node. Etherpad requires v0.8.x or v0.10.x'); process.exit(1) }"
 cmd /C node -e %check_version% || exit /B 1
 
 echo _
-echo Installing etherpad-lite and dependencies...
+echo Ensure that all dependencies are up to date...  If this is the first time you have run Etherpad please be patient.
 cmd /C npm install src/ --loglevel warn || exit /B 1
 
 echo _
@@ -36,4 +36,4 @@ IF NOT EXIST settings.json (
 )
 
 echo _
-echo Installed Etherpad-lite!  To run Etherpad type start.bat
+echo Installed Etherpad!  To run Etherpad type start.bat

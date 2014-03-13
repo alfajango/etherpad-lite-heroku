@@ -170,7 +170,6 @@ exports.getPad = function(id, text, callback)
     {
       if(ERR(err, callback)) return;
       globalPads.set(id, pad);
-      padList.addPad(id);
       callback(null, pad);
     });
   }

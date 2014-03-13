@@ -1,0 +1,29 @@
+{
+  "name": "etherpad-lite",
+  "version": "0.0.0",
+  "description": "![alt text](http://i.imgur.com/zYrGkg3.gif \"Etherpad in action on PrimaryPad\")",
+  "main": "index.js",
+  "bin": {
+    "etherpad-lite": "checkPad.js"
+  },
+  "directories": {
+    "doc": "doc",
+    "test": "tests"
+  },
+  "dependencies": {
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/ether/etherpad-lite.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ether/etherpad-lite/issues"
+  },
+  "homepage": "https://github.com/ether/etherpad-lite"
+}

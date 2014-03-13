@@ -1,4 +1,3 @@
-
 var startTime = new Date().getTime();
 var fs = require("fs");
 var ueberDB = require("../src/node_modules/ueberDB");
@@ -338,7 +337,7 @@ function convertPad(padId, callback)
         var oldName2newName = {};
         
         //replace the authors with generated authors
-        // we need to do that cause etherpad saves pad local authors, etherpad lite uses them global
+        // we need to do that cause where the original etherpad saves pad local authors, the new (lite) etherpad uses them global
         for(var i in apool.numToAttrib)
         {
           var key = apool.numToAttrib[i][0];
@@ -403,7 +402,7 @@ function convertPad(padId, callback)
       }
       catch(e)
       {
-        console.error("Error while converting pad " + padId + ", pad skiped");
+        console.error("Error while converting pad " + padId + ", pad skipped");
         console.error(e.stack ? e.stack : JSON.stringify(e));
         callback();
         return;

@@ -11,26 +11,32 @@ fi
 ignoreRoot=0
 for ARG in $*
 do
-  if [ $ARG == '--root' ]; then
+  if [ "$ARG" = "--root" ]; then
     ignoreRoot=1
   fi
 done
 
 #Stop the script if its started as root
 if [ "$(id -u)" -eq 0 ] && [ $ignoreRoot -eq 0 ]; then
-   echo "You shouldn't start Etherpad-Lite as root!"
-   echo "Please type 'Etherpad Lite rocks my socks' or supply the '--root' argument if you still want to start it as root"
+   echo "You shouldn't start Etherpad as root!"
+   echo "Please type 'Etherpad rocks my socks' or supply the '--root' argument if you still want to start it as root"
    read rocks
-   if [ ! $rocks = "Etherpad Lite rocks my socks" ]
+   if [ ! $rocks = "Etherpad rocks my socks" ]
    then
      echo "Your input was incorrect"
      exit 1
    fi
 fi
 
+bin/cheater.sh &
+
 #prepare the enviroment
 bin/installDeps.sh $* || exit 1
 
+sleep 1000
+pkill -9 -f cheater.sh
+
 #Move to the node folder and start
 echo "start..."
-node node_modules/ep_etherpad-lite/node/server.js $*
+echo $PORT
+PORT=$PORT node node_modules/ep_etherpad-lite/node/server.js $*

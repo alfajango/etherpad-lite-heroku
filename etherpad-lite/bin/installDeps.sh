@@ -44,8 +44,8 @@ fi
 #check node version
 NODE_VERSION=$(node --version)
 NODE_V_MINOR=$(echo $NODE_VERSION | cut -d "." -f 1-2)
-if [ ! $NODE_V_MINOR = "v0.8" ] && [ ! $NODE_V_MINOR = "v0.6" ]; then
-  echo "You're running a wrong version of node, you're using $NODE_VERSION, we need v0.6.x or v0.8.x" >&2
+if [ ! $NODE_V_MINOR = "v0.8" ] && [ ! $NODE_V_MINOR = "v0.10" ]; then
+  echo "You're running a wrong version of node, you're using $NODE_VERSION, we need v0.8.x or v0.10.x" >&2
   exit 1 
 fi
 
@@ -63,7 +63,7 @@ if [ ! -f $settings ]; then
   cp settings.json.template $settings || exit 1
 fi
 
-echo "Ensure that all dependencies are up to date..."
+echo "Ensure that all dependencies are up to date...  If this is the first time you have run Etherpad please be patient."
 (
   mkdir -p node_modules
   cd node_modules
@@ -77,7 +77,7 @@ echo "Ensure that all dependencies are up to date..."
 
 echo "Ensure jQuery is downloaded and up to date..."
 DOWNLOAD_JQUERY="true"
-NEEDED_VERSION="1.7.1"
+NEEDED_VERSION="1.9.1"
 if [ -f "src/static/js/jquery.js" ]; then
   if [ $(uname) = "SunOS" ]; then
     VERSION=$(cat src/static/js/jquery.js | head -n 3 | ggrep -o "v[0-9]\.[0-9]\(\.[0-9]\)\?");
