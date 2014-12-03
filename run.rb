@@ -7,7 +7,7 @@ require 'uri'
 # Create settings hash add merge in the user-provided JSON.
 mysql_uri = URI.parse(ENV["DATABASE_URL"])
 settings = {
-  dbType: 'mysql',
+  dbType: mysql_uri.scheme,
   dbSettings: {
     user: mysql_uri.user,
     host: mysql_uri.host,
